@@ -4,18 +4,18 @@ var bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 var mongoose = require("mongoose");
 const constants = require("../utls/constants");
-const { generate4OTP } = require("../services/commonServices");
-const { forgotEmailPassword } = require("../emails/onBoarding");
+const { generate4OTP, generatePassword } = require("../services/commonServices");
+const { forgotEmailPassword, sendLoginCredentialsEmail } = require("../emails/onBoarding");
 
 
 
 module.exports = {
     userRegister: async (req, res) => {
         try {
-            const { email, fullName, password, role } = req.body;
+            const { email, fullName, role } = req.body;
             let data = req.body;
 
-            if (!email || !fullName || !password || !role) {
+            if (!email || !fullName || !role) {
                 return res.status(400).json({
                     success: false,
                     message: "Please add all the required fields."
@@ -28,6 +28,8 @@ module.exports = {
                     message: "Email already exists."
                 })
             }
+            let password = generatePassword();
+
             const hashedPassword = await bcrypt.hashSync(password, bcrypt.genSaltSync(10));
             // delete data.password;
             data.password = hashedPassword;
@@ -35,29 +37,88 @@ module.exports = {
             const create = await db.users.create(data);
 
             const findNewUser = await db.users.findOne({ email: email });
-            let token = jwt.sign(
-                {
-                    id: findNewUser.id,
-                    role: findNewUser.role,
-                },
-                process.env.JWT_SECRET,
-                {
-                    expiresIn: "3000h",
-                }
-            );
 
-            const userInfo = {
-                id: findNewUser._id,
-                name: findNewUser.fullName,
+            const emailPayload = {
+                fullName: findNewUser.fullName,
                 email: findNewUser.email,
-                role: findNewUser.role,
-                access_token: token
-            };
+                password: password,
+            }
+
+            await sendLoginCredentialsEmail(emailPayload);
+
 
             return res.status(200).json({
                 success: true,
                 message: "Data added successfully.",
-                data: userInfo
+            })
+
+        } catch (err) {
+            console.log("ERRROR WHLE REGISTER:", err)
+            return res.status(400).json({
+                success: false,
+                message: "Unable to register."
+            })
+        }
+    },
+
+    registerByGoogle: async (req, res) => {
+        try {
+            const { email, fullName, role = 'user' } = req.body;
+            let data = req.body;
+
+            if (!email || !fullName || !role) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please add all the required fields."
+                })
+            }
+            const findUser = await db.users.findOne({ email: email });
+            if (findUser) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email already exists."
+                })
+            }
+            let password = generatePassword();
+
+            const hashedPassword = await bcrypt.hashSync(password, bcrypt.genSaltSync(10));
+            // delete data.password;
+            data.password = hashedPassword;
+
+            const create = await db.users.create(data);
+
+            const findNewUser = await db.users.findOne({ email: email });
+
+            const emailPayload = {
+                fullName: findNewUser.fullName,
+                email: findNewUser.email,
+                password: password,
+            }
+
+            await sendLoginCredentialsEmail(emailPayload);
+
+            // let token = jwt.sign(
+            //     {
+            //         id: findNewUser.id,
+            //         role: findNewUser.role,
+            //     },
+            //     process.env.JWT_SECRET,
+            //     {
+            //         expiresIn: "3000h",
+            //     }
+            // );
+
+            // const userInfo = {
+            //     id: findNewUser._id,
+            //     name: findNewUser.fullName,
+            //     email: findNewUser.email,
+            //     role: findNewUser.role,
+            //     access_token: token
+            // };
+
+            return res.status(200).json({
+                success: true,
+                message: "User added. Credentials are sent over the user's email",
             })
 
         } catch (err) {

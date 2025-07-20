@@ -6,5 +6,6 @@ module.exports = {
     "/user/google-login",
     "/user/forgotPasswordOTP",
     "/user/verifyOTP",
+    "/user/google-register"
   ],
 };

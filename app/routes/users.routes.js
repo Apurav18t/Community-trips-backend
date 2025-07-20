@@ -7,6 +7,8 @@ var router = require("express").Router();
 
 router.post("/registerUser", user.userRegister);
 
+router.post("/google-register", user.registerByGoogle);
+
 router.post("/login", user.login);
 
 router.get("/allUsers", user.getAllUsers);
