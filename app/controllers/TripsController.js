@@ -39,6 +39,7 @@ module.exports = {
                     locationOrder: i,
                     locationName: l.locationName,
                     likedLocations: l?.likedLocations || null,
+                    addedBy: req.identity.id,
                 })
                 i++;
             }
