@@ -17,6 +17,7 @@ module.exports = (mongoose) => {
             addedBy: { type: Schema.Types.ObjectId, ref: "users", required: true },
             isDeleted: { type: Boolean, default: false },
             placesSelectedData: { type: Array }, // after add use it in update
+            itineraryData: { type: String },
         },
 
         { timestamps: true }

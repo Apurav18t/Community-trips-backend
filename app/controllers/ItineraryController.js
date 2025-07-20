@@ -174,5 +174,39 @@ Respond in Markdown format with well-structured, day-wise itinerary. Include bol
                 message: "Something went wrong while regenerating the itinerary.",
             });
         }
+    },
+
+    saveNewItinerary: async (req, res) => {
+        try {
+            const { tripId, itineraryData } = req.body;
+            if (!tripId || !itineraryData) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Trip ID and itineraryData are required.",
+                });
+            }
+
+            const findTrip = await db.trips.findOne({ _id: tripId, isDeleted: false });
+            if (!findTrip) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Trip not found.",
+                });
+            }
+
+            await db.trips.updateOne({ _id: tripId, isDeleted: false }, { itineraryData });
+
+            return res.status(200).json({
+                success: true,
+                message: "Your itinerary has been saved."
+            })
+
+        } catch (err) {
+            console.error("Error saving itinerary:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Something went wrong while saving the itinerary.",
+            });
+        }
     }
 }

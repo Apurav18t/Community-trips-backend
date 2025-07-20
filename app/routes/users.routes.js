@@ -19,5 +19,8 @@ router.post("/google-login", user.loginWithGoogle);
 
 router.put("/updateProfile/:id", user.updateProfile);
 
+router.get("/details/:id", user.getUserById);
+
+
 
 module.exports = router;

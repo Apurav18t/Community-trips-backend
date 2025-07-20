@@ -343,5 +343,42 @@ module.exports = {
                 message: "Unable to update profile."
             });
         }
+    },
+
+    getUserById: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const user = await db.users.findById(id)
+
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            if (user.isDeleted) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'User details retrieved successfully',
+                data: user
+            });
+
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error',
+                error: error.message
+            });
+        }
     }
 }
