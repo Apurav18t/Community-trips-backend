@@ -11,6 +11,8 @@ router.post("/google-register", user.registerByGoogle);
 
 router.post("/login", user.login);
 
+router.post("/verifyUser", user.verifyUser);
+
 router.get("/allUsers", user.getAllUsers);
 
 router.post("/forgotPasswordOTP", user.forgotPasswordOTP);

@@ -12,10 +12,10 @@ const { forgotEmailPassword, sendLoginCredentialsEmail } = require("../emails/on
 module.exports = {
     userRegister: async (req, res) => {
         try {
-            const { email, fullName, role } = req.body;
+            const { email, fullName, role, password } = req.body;
             let data = req.body;
 
-            if (!email || !fullName || !role) {
+            if (!email || !fullName || !password || !role) {
                 return res.status(400).json({
                     success: false,
                     message: "Please add all the required fields."
@@ -28,28 +28,31 @@ module.exports = {
                     message: "Email already exists."
                 })
             }
-            let password = generatePassword();
+            let otp = generate4OTP();
+
+            data.isVerified = "N";
+            data.addedType = "self";
 
             const hashedPassword = await bcrypt.hashSync(password, bcrypt.genSaltSync(10));
-            // delete data.password;
+            delete data.password;
             data.password = hashedPassword;
 
             const create = await db.users.create(data);
 
-            const findNewUser = await db.users.findOne({ email: email });
+            // const findNewUser = await db.users.findOne({ email: email });
 
             const emailPayload = {
-                fullName: findNewUser.fullName,
-                email: findNewUser.email,
-                password: password,
+                fullName: fullName,
+                email: email,
+                otp: otp,
             }
 
             await sendLoginCredentialsEmail(emailPayload);
-
+            await db.users.updateOne({ _id: create._id }, { otp })
 
             return res.status(200).json({
                 success: true,
-                message: "Data added successfully.",
+                message: "User added. Please verify your account.",
             })
 
         } catch (err) {
@@ -152,6 +155,7 @@ module.exports = {
                     },
                 });
             }
+
             var query = {};
             query.email = email.toLowerCase();
 
@@ -162,6 +166,20 @@ module.exports = {
                 return res.status(400).json({
                     success: false,
                     message: constants.onBoarding.NO_USER_EXIST,
+                })
+            }
+            if (findUsers.isVerified === "N") {
+                let otp = generate4OTP();
+                const emailPayload = {
+                    fullName: findUsers.fullName,
+                    email: findUsers.email,
+                    otp: otp,
+                }
+
+                await sendLoginCredentialsEmail(emailPayload);
+                return res.status(400).json({
+                    success: false,
+                    message: "USER NOT VERIFIED. OTP SENT TO YOUR EMAIL PLEASE CHECK",
                 })
             }
             let userInfo;
@@ -199,6 +217,57 @@ module.exports = {
                 message: "Welcome back you are logged in.",
                 data: userInfo
             })
+
+        } catch (err) {
+            console.log("ERRROR WHLE LOGGING IN:", err)
+            return res.status(400).json({
+                success: false,
+                message: "Unable to login."
+            })
+        }
+    },
+
+    verifyUser: async (req, res) => {
+        try {
+            const { email, otp } = req.body;
+
+            if (!email || !otp) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email and OTP are required."
+                });
+            }
+
+            const user = await db.users.findOne({ email: email });
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found."
+                });
+            }
+
+            if (user.otp !== otp) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid OTP."
+                });
+            }
+
+            await db.users.updateOne(
+                { email: email },
+                {
+                    $set: {
+                        isVerified: "Y",
+                        otp: null
+                    }
+                }
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Email verified successfully."
+            });
 
         } catch (err) {
             console.log("ERRROR WHLE LOGGING IN:", err)

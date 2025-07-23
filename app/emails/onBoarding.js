@@ -59,21 +59,21 @@ const sendTripInvite = async (options) => {
 };
 
 const sendLoginCredentialsEmail = async (options) => {
-  const { email, fullName, password } = options;
+  const { email, fullName, password, otp } = options;
 
   const message = `
     <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f7f7f7; border-radius: 8px;">
-      <h2 style="color: #333;">Welcome to ${fullName} Service!</h2>
+      <h2 style="color: #333;">Welcome ${fullName}.</h2>
       <p style="font-size: 16px; color: #555;">
-        Thank you for registering with us. Below are your login credentials:
+        Thank you for registering with us. Please verify your email.:
       </p>
       <div style="background-color: #fff; padding: 15px 20px; border: 1px solid #ddd; border-radius: 5px; margin: 20px 0;">
         <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Password:</strong> ${password}</p>
+        <p><strong>OTP:</strong> ${otp}</p>
       </div>
-      <a href="http://localhost:3000/login" 
+      <a href="http://localhost:3000/verifyUser" 
         style="display: inline-block; margin-top: 10px; padding: 10px 20px; background-color: #007BFF; color: #fff; text-decoration: none; border-radius: 5px;">
-        Login Now
+        Verify Now
       </a>
       <footer style="margin-top: 30px; color: #888;">Best regards,<br />Your Team</footer>
     </div>
