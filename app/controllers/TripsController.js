@@ -224,21 +224,31 @@ module.exports = {
                 filter.addedBy = addedBy;
             }
 
+            const searchFilter = { tripName: { $regex: search, $options: 'i' } };
+
             if (type === "upcoming") {
                 filter = {
-                    startDate: { $gt: date },
-                    tripName: { $regex: search, $options: 'i' }
+                    ...filter,
+                    ...searchFilter,
+                    startDate: { $gt: date }
                 };
             } else if (type === "past") {
                 filter = {
-                    endDate: { $lt: date },
-                    tripName: { $regex: search, $options: 'i' }
+                    ...filter,
+                    ...searchFilter,
+                    endDate: { $lt: date }
                 };
             } else if (type === "current") {
                 filter = {
+                    ...filter,
+                    ...searchFilter,
                     startDate: { $lte: date },
-                    endDate: { $gte: date },
-                    tripName: { $regex: search, $options: 'i' }
+                    endDate: { $gte: date }
+                };
+            } else {
+                filter = {
+                    ...filter,
+                    ...searchFilter
                 };
             }
 
