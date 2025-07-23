@@ -218,7 +218,11 @@ module.exports = {
             const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1;
             const search = req.query.search || '';
             let type = req.query.type;
+            let addedBy = req.query.addedBy;
             let filter = {};
+            if (addedBy) {
+                filter.addedBy = addedBy;
+            }
 
             if (type === "upcoming") {
                 filter = {
