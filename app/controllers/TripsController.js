@@ -441,6 +441,66 @@ module.exports = {
                 message: "Unable to update invite."
             });
         }
+    },
+
+    generateTripTips: async (req, res) => {
+        try {
+            const { tripId } = req.body;
+
+            if (!tripId) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Trip ID is required."
+                });
+            }
+
+            const trip = await db.trips.findById(tripId).populate("locations");
+
+            if (!trip || !trip.locations || trip.locations.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "No locations found for this trip."
+                });
+            }
+
+            // Extract location names
+            const locationNames = trip.locations.map(loc => loc.locationName).filter(Boolean);
+
+            // const locationPrompt = locationNames.join(", ");
+            const prompt = `
+You are a helpful travel assistant. I am planning a trip to the following locations: ${locationNames}.
+
+For each location, give me travel tips in the following structured format:
+
+**🗺️ Location Name**
+- **Safety:** [Tips about safety]
+- **Packing:** [What to pack]
+- **Local Customs:** [How to behave]
+- **Best Time to Visit:** [Season or months]
+
+Please ensure the formatting is clean and readable with proper line spacing.
+`;
+
+            const completion = await openai.chat.completions.create({
+                model: "gpt-4", // or "gpt-3.5-turbo"
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7,
+            });
+
+            const tips = completion.choices[0].message.content;
+
+            return res.status(200).json({
+                success: true,
+                tips,
+            });
+
+        } catch (err) {
+            console.log("ERROR WHILE FETCHING TRIP INVITES:", err);
+            return res.status(400).json({
+                success: false,
+                message: "Failed to fetch invites"
+            });
+        }
     }
 
 

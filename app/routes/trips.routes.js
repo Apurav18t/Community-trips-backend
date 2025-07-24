@@ -24,5 +24,8 @@ router.get("/invites", Trips.getTripInvites);
 
 router.put("/replyTheInvite", Trips.replyTheInvite);
 
+router.post("/tripTips", Trips.generateTripTips);
+
+
 
 module.exports = router;
