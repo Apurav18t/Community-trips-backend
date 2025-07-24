@@ -82,46 +82,47 @@ module.exports = {
                     message: "Email already exists."
                 })
             }
-            let password = generatePassword();
+            // let password = generatePassword();
 
-            const hashedPassword = await bcrypt.hashSync(password, bcrypt.genSaltSync(10));
+            // const hashedPassword = await bcrypt.hashSync(password, bcrypt.genSaltSync(10));
             // delete data.password;
-            data.password = hashedPassword;
+            // data.password = hashedPassword;
 
             const create = await db.users.create(data);
 
             const findNewUser = await db.users.findOne({ email: email });
 
-            const emailPayload = {
-                fullName: findNewUser.fullName,
-                email: findNewUser.email,
-                password: password,
-            }
-
-            await sendLoginCredentialsEmail(emailPayload);
-
-            // let token = jwt.sign(
-            //     {
-            //         id: findNewUser.id,
-            //         role: findNewUser.role,
-            //     },
-            //     process.env.JWT_SECRET,
-            //     {
-            //         expiresIn: "3000h",
-            //     }
-            // );
-
-            // const userInfo = {
-            //     id: findNewUser._id,
-            //     name: findNewUser.fullName,
+            // const emailPayload = {
+            //     fullName: findNewUser.fullName,
             //     email: findNewUser.email,
-            //     role: findNewUser.role,
-            //     access_token: token
-            // };
+            //     password: password,
+            // }
+
+            // await sendLoginCredentialsEmail(emailPayload);
+
+            let token = jwt.sign(
+                {
+                    id: findNewUser.id,
+                    role: findNewUser.role,
+                },
+                process.env.JWT_SECRET,
+                {
+                    expiresIn: "3000h",
+                }
+            );
+
+            const userInfo = {
+                id: findNewUser._id,
+                name: findNewUser.fullName,
+                email: findNewUser.email,
+                role: findNewUser.role,
+                access_token: token
+            };
 
             return res.status(200).json({
                 success: true,
-                message: "User added. Credentials are sent over the user's email",
+                message: "User added.",
+                data: userInfo
             })
 
         } catch (err) {
