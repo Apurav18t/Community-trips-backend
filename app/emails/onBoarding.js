@@ -12,10 +12,10 @@ const forgotEmailPassword = async (options) => {
   let message;
   message = `
      <div style="font-family: Arial, sans-serif; padding: 20px;">
-      <h2>Welcome to ${fullName} Service!</h2>
+      <h2>Welcome ${fullName}</h2>
       <p>Your OTP is ${otp}.</p>
       <p>Thank you for using our service.</p>
-         <a href="http://localhost:6969/change-password" 
+         <a href="http://localhost:3000/change-password" 
        style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #007BFF; color: #fff; text-decoration: none; border-radius: 5px;">
       Verify Now
     </a>
