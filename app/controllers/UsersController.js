@@ -367,8 +367,9 @@ module.exports = {
                     message: "Invalid OTP."
                 })
             }
-            let password = newPassword;
-            const updatePass = await db.users.updateOne({ _id: findUser._id }, bcrypt.hashSync(password, bcrypt.genSaltSync(10))); return res.status(200).json({
+            const hashedPassword = bcrypt.hashSync(newPassword, bcrypt.genSaltSync(10));
+            const updatePass = await db.users.updateOne({ _id: findUser._id }, { hashedPassword, otp: null });
+            return res.status(200).json({
                 success: true,
                 message: "Password updated sucessfully.",
                 data: updatePass
