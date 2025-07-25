@@ -4,7 +4,7 @@ module.exports = (mongoose) => {
     var schema = mongoose.Schema(
         {
             tripId: { type: Schema.Types.ObjectId, ref: "trips" },
-            invitedAccepted: { type: String, enum: ["accepted", "rejected", "pending"], default: "pending" },
+            inviteStatus: { type: String, enum: ["accepted", "rejected", "pending"], default: "pending" },
             inviteSendTo: { type: String },
             inviteSendBy: { type: Schema.Types.ObjectId, ref: "users" },
             isDeleted: { type: Boolean, default: false },

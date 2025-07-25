@@ -26,6 +26,13 @@ router.put("/replyTheInvite", Trips.replyTheInvite);
 
 router.post("/tripTips", Trips.generateTripTips);
 
+router.post("/statusChange", Trips.statusChange);
+
+router.delete("/deleteInvite", Trips.deleteInvite);
+
+router.get("/getAll", Trips.getAllUserSentInvites);
+
+
 
 
 module.exports = router;

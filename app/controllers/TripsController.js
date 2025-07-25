@@ -325,7 +325,7 @@ module.exports = {
 
     inviteUserToTrip: async (req, res) => {
         try {
-            const { email, tripId, addedBy } = req.body;
+            const { email, tripId } = req.body;
 
             if (!email || !tripId) {
                 return res.status(400).json({
@@ -334,7 +334,7 @@ module.exports = {
                 });
             }
 
-            const findEmail = await db.users.findOne({ email: email })
+            const findEmail = await db.users.findOne({ email: email });
             let fullName;
             if (findEmail) {
                 fullName = findEmail.fullName
@@ -351,6 +351,8 @@ module.exports = {
                 });
             }
 
+            let addedBy = req.identity.id;
+
             const emailPayload = {
                 email: email,
                 fullName: fullName,
@@ -361,12 +363,13 @@ module.exports = {
                 startDate: trip.startDate,
                 endDate: trip.endDate
             };
-            const sendInvite = sendTripInvite(emailPayload)
+            const sendInvite = sendTripInvite(emailPayload);
 
             const createInvite = db.tripInvites.create(
                 {
+                    tripId: trip._id,
                     inviteSendTo: email,
-                    inviteSendBy: tripId.addedBy,
+                    inviteSendBy: addedBy,
                 }
             );
 
@@ -468,26 +471,31 @@ module.exports = {
 
             // const locationPrompt = locationNames.join(", ");
             const prompt = `
-You are a helpful travel assistant. I am planning a trip to the following locations: ${locationNames}.
+You are a travel assistant. I am planning a trip to the following locations: ${locationNames.join(", ")}.
 
-For each location, give me travel tips in the following structured format:
+For each location, give travel tips in this exact format with clean bullet points:
 
-**🗺️ Location Name**
-- **Safety:** [Tips about safety]
-- **Packing:** [What to pack]
-- **Local Customs:** [How to behave]
-- **Best Time to Visit:** [Season or months]
+------------------------------
+📍 Location: <Location Name>
 
-Please ensure the formatting is clean and readable with proper line spacing.
+• **Safety**: [Short tip]
+• **Packing**: [Short tip]
+• **Local Customs**: [Short tip]
+• **Best Time to Visit**: [Short tip]
+------------------------------
+
+Use this format strictly and repeat it for every location. Keep the tips clear and to the point.
 `;
 
             const completion = await openai.chat.completions.create({
-                model: "gpt-4", // or "gpt-3.5-turbo"
+                model: "gpt-4",
                 messages: [{ role: "user", content: prompt }],
                 temperature: 0.7,
             });
 
             const tips = completion.choices[0].message.content;
+
+            const updateTripTips = await db.trips.updateOne({ _id: tripId }, { tripsTips: tips });
 
             return res.status(200).json({
                 success: true,
@@ -501,7 +509,114 @@ Please ensure the formatting is clean and readable with proper line spacing.
                 message: "Failed to fetch invites"
             });
         }
-    }
+    },
 
+    statusChange: async (req, res) => {
+        try {
+
+            const { id, inviteStatus } = req.body;
+
+            if (!id || !inviteStatus) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payload Missing"
+                })
+            }
+
+            const updateStatus = await db.tripInvites.updateOne({ _id: id }, { inviteStatus })
+            if (updateStatus.updatedCount === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invite not found"
+                })
+            } else {
+                return res.status(200).json({
+                    success: true,
+                    message: "Status update for this invite."
+                })
+            }
+
+        } catch (err) {
+            console.log("ERROR WHILE FETCHING TRIP INVITES:", err);
+            return res.status(400).json({
+                success: false,
+                message: "Failed to fetch invites"
+            });
+        }
+    },
+
+    deleteInvite: async (req, res) => {
+        try {
+            const { id } = req.query;
+
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "TripInvite ID is required",
+                });
+            }
+
+            const deletedInvite = await TripInvite.findByIdAndDelete(id);
+
+            if (!deletedInvite) {
+                return res.status(404).json({
+                    success: false,
+                    message: "TripInvite not found",
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Invite deleted.",
+                data: deletedInvite,
+            });
+        } catch (err) {
+            console.log("ERROR WHILE DELETING TRIP INVITES:", err);
+            return res.status(400).json({
+                success: false,
+                message: "Failed to fetch invites"
+            });
+        }
+    },
+
+    getAllUserSentInvites: async (req, res) => {
+        try {
+            const { userId } = req.query;
+
+            const findUser = await db.users.findOne({ _id: userId, isDeleted: false });
+            if (!findUser) {
+                return res.status(400).json({
+                    success: false,
+                    message: "User not found",
+                });
+            }
+            let email = findUser.email;
+            if (!email) {
+                return res.status(400).json({
+                    success: false,
+                    message: "User email is required",
+                });
+            }
+
+            const invites = await db.tripInvites.find({
+                inviteSendTo: email,
+                isDeleted: false,
+            })
+                .populate("tripId") 
+                .populate("inviteSendBy");
+
+            return res.status(200).json({
+                success: true,
+                message: "Invites fetched successfully",
+                data: invites,
+            });
+        } catch (err) {
+            console.log("ERROR WHILE GETTING ALL TRIP INVITES:", err);
+            return res.status(400).json({
+                success: false,
+                message: "Failed to get all invites"
+            });
+        }
+    }
 
 }

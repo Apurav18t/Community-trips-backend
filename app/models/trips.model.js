@@ -18,6 +18,7 @@ module.exports = (mongoose) => {
             isDeleted: { type: Boolean, default: false },
             placesSelectedData: { type: Array }, // after add use it in update
             itineraryData: { type: String },
+            tripsTips: { type: String },
         },
 
         { timestamps: true }
