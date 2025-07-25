@@ -368,7 +368,11 @@ module.exports = {
                 })
             }
             const hashedPassword = bcrypt.hashSync(newPassword, bcrypt.genSaltSync(10));
-            const updatePass = await db.users.updateOne({ _id: findUser._id }, { hashedPassword, otp: null });
+
+            const updatePass = await db.users.updateOne(
+                { _id: findUser._id },
+                { password: hashedPassword, otp: null } 
+            );
             return res.status(200).json({
                 success: true,
                 message: "Password updated sucessfully.",
