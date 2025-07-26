@@ -248,7 +248,7 @@ module.exports = {
                 });
             }
 
-            if (user.otp !== otp) {
+            if (user.otp !== parseInt(otp)) {
                 return res.status(400).json({
                     success: false,
                     message: "Invalid OTP."
@@ -371,7 +371,7 @@ module.exports = {
 
             const updatePass = await db.users.updateOne(
                 { _id: findUser._id },
-                { password: hashedPassword, otp: null } 
+                { password: hashedPassword, otp: null }
             );
             return res.status(200).json({
                 success: true,
