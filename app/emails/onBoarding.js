@@ -15,7 +15,7 @@ const forgotEmailPassword = async (options) => {
       <h2>Welcome ${fullName}</h2>
       <p>Your OTP is ${otp}.</p>
       <p>Thank you for using our service.</p>
-         <a href="http://localhost:3000/change-password" 
+         <a href="https://community-trips-frontend.vercel.app//change-password" 
        style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #007BFF; color: #fff; text-decoration: none; border-radius: 5px;">
       Verify Now
     </a>
@@ -43,7 +43,7 @@ const sendTripInvite = async (options) => {
         <li><strong>Dates:</strong> ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}</li>
       </ul>
       <p>Click below to view or accept your trip invitation:</p>
-      <a href="http://localhost:3000/trips/${tripId}" 
+      <a href="https://community-trips-frontend.vercel.app//trips/${tripId}" 
          style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #28a745; color: #fff; text-decoration: none; border-radius: 5px;">
         View Trip Details
       </a>
@@ -71,7 +71,7 @@ const sendLoginCredentialsEmail = async (options) => {
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>OTP:</strong> ${otp}</p>
       </div>
-      <a href="http://localhost:3000/verifyUser" 
+      <a href="https://community-trips-frontend.vercel.app/verifyUser" 
         style="display: inline-block; margin-top: 10px; padding: 10px 20px; background-color: #007BFF; color: #fff; text-decoration: none; border-radius: 5px;">
         Verify Now
       </a>
