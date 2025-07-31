@@ -323,69 +323,66 @@ module.exports = {
         }
     },
 
-    inviteUserToTrip: async (req, res) => {
-        try {
-            const { email, tripId } = req.body;
+  inviteUserToTrip: async (req, res) => {
+    try {
+        const { email, tripId } = req.body;
 
-            if (!email || !tripId) {
-                return res.status(400).json({
-                    success: false,
-                    message: "No email address provided.",
-                });
-            }
-
-            const findEmail = await db.users.findOne({ email: email });
-            let fullName;
-            if (findEmail) {
-                fullName = findEmail.fullName
-            } else {
-                fullName = "Explorer";
-            }
-
-            const trip = await db.trips.findOne({ _id: tripId, isDeleted: false });
-
-            if (!trip) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Trip not found.",
-                });
-            }
-
-            let addedBy = req.identity.id;
-
-            const emailPayload = {
-                email: email,
-                fullName: fullName,
-                tripName: trip.tripName,
-                tripId: trip._id,
-                startLocation: trip.startLocation,
-                endLocation: trip.endLocation,
-                startDate: trip.startDate,
-                endDate: trip.endDate
-            };
-            const sendInvite = sendTripInvite(emailPayload);
-
-            const createInvite = db.tripInvites.create(
-                {
-                    tripId: trip._id,
-                    inviteSendTo: email,
-                    inviteSendBy: addedBy,
-                }
-            );
-
-            return res.status(200).json({
-                success: true,
-                message: "Invitations sent successfully!",
-            });
-
-        } catch (err) {
-            console.log("ERRROR WHILE INVITING USER:", err)
+        if (!email || !tripId) {
             return res.status(400).json({
                 success: false,
-                message: "Unable to invite new users."
-            })
+                message: "No email address provided.",
+            });
         }
-    },
+
+        const findEmail = await db.users.findOne({ email: email });
+        let fullName = findEmail ? findEmail.fullName : "Explorer";
+
+        const trip = await db.trips.findOne({ _id: tripId, isDeleted: false });
+        if (!trip) {
+            return res.status(404).json({
+                success: false,
+                message: "Trip not found.",
+            });
+        }
+
+        const addedBy = req.identity.id;
+
+        // ✅ Step 1: Create Invite FIRST
+        const newInvite = await db.tripInvites.create({
+            tripId: trip._id,
+            inviteSendTo: email,
+            inviteSendBy: addedBy,
+            inviteStatus: 'pending', // <-- default status
+        });
+
+        // ✅ Step 2: Send email with inviteId (not tripId)
+        const emailPayload = {
+            email: email,
+            fullName: fullName,
+            tripName: trip.tripName,
+            tripId: trip._id,
+            inviteId: newInvite._id.toString(), // 🆕 Include inviteId
+            startLocation: trip.startLocation,
+            endLocation: trip.endLocation,
+            startDate: trip.startDate,
+            endDate: trip.endDate
+        };
+        await sendTripInvite(emailPayload);
+
+        return res.status(200).json({
+            success: true,
+            message: "Invitation sent successfully!",
+        });
+
+    } catch (err) {
+        console.log("ERROR WHILE INVITING USER:", err);
+        return res.status(400).json({
+            success: false,
+            message: "Unable to invite new users."
+        });
+    }
+},
+
 
     getTripInvites: async (req, res) => {
         try {
@@ -402,49 +399,58 @@ module.exports = {
         }
     },
 
-    replyTheInvite: async (req, res) => {
-        try {
-            const { inviteId, status } = req.body;
+   replyTheInvite: async (req, res) => {
+  try {
+    const { inviteId, status } = req.body;
 
-            if (!inviteId || !['accepted', 'rejected'].includes(status)) {
-                return res.status(400).json({ success: false, message: "Invalid input." });
-            }
+    if (!inviteId || !['accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid input." });
+    }
 
-            const updatedInvite = await db.tripInvites.findByIdAndUpdate(
-                inviteId,
-                { invitedAccepted: status },
-                { new: true }
-            );
+    const invite = await db.tripInvites.findById(inviteId);
 
-            if (status === 'accepted') {
-                const trip = await db.trips.findById(updatedInvite.tripId);
+    if (!invite) {
+      return res.status(404).json({ success: false, message: "Invite not found." });
+    }
 
-                if (trip) {
+    if (invite.inviteStatus !== 'pending') {
+      return res.status(400).json({ success: false, message: "Invite already responded to." });
+    }
 
-                    const user = await db.users.findOne({ email: updatedInvite.inviteSendTo });
+    // ✅ Now update
+    invite.inviteStatus = status;
+    await invite.save();
 
-
-                    if (user) {
-                        trip.memberIds.push(user._id);
-                        await trip.save();
-                    }
-                }
-            }
-
-            return res.status(200).json({
-                success: true,
-                message: "Invite status updated.",
-                data: updatedInvite
-            });
-
-        } catch (err) {
-            console.log("ERROR WHILE REPLYING INVITE:", err);
-            return res.status(400).json({
-                success: false,
-                message: "Unable to update invite."
-            });
+    // ✅ If accepted, add user to trip
+    if (status === 'accepted') {
+      const trip = await db.trips.findById(invite.tripId);
+      if (trip) {
+        const user = await db.users.findOne({ email: invite.inviteSendTo });
+        if (user) {
+          // Check to prevent duplicates
+          if (!trip.memberIds.includes(user._id)) {
+            trip.memberIds.push(user._id);
+            await trip.save();
+          }
         }
-    },
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Invite status updated.",
+      data: invite
+    });
+
+  } catch (err) {
+    console.log("ERROR WHILE REPLYING INVITE:", err);
+    return res.status(400).json({
+      success: false,
+      message: "Unable to update invite."
+    });
+  }
+},
+
 
     generateTripTips: async (req, res) => {
         try {
@@ -523,7 +529,7 @@ Use this format strictly and repeat it for every location. Keep the tips clear a
                 })
             }
 
-            const updateStatus = await db.tripInvites.updateOne({ _id: id }, { inviteStatus })
+const updateStatus = await db.tripInvites.updateOne({ _id: id }, { inviteStatus: inviteStatus })
             if (updateStatus.updatedCount === 0) {
                 return res.status(400).json({
                     success: false,
@@ -617,6 +623,28 @@ Use this format strictly and repeat it for every location. Keep the tips clear a
                 message: "Failed to get all invites"
             });
         }
+    }, getInviteDetail: async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Invite ID is required" });
     }
+
+    const invite = await db.tripInvites.findById(id)
+      .populate('tripId')
+      .populate('inviteSendBy');
+
+    if (!invite || invite.isDeleted) {
+      return res.status(404).json({ success: false, message: "Invite not found or expired." });
+    }
+
+    return res.status(200).json({ success: true, data: invite });
+  } catch (err) {
+    console.log("ERROR WHILE FETCHING INVITE DETAIL:", err);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+},
+
 
 }

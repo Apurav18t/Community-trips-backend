@@ -32,6 +32,7 @@ router.delete("/deleteInvite", Trips.deleteInvite);
 
 router.get("/getAll", Trips.getAllUserSentInvites);
 
+router.get("/inviteDetail", Trips.getInviteDetail);
 
 
 

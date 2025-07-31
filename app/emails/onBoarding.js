@@ -31,7 +31,7 @@ const forgotEmailPassword = async (options) => {
 }
 
 const sendTripInvite = async (options) => {
-  const { email, fullName, tripName, tripId, startLocation, endLocation, startDate, endDate } = options;
+  const { email, fullName, tripName, tripId,inviteId, startLocation, endLocation, startDate, endDate } = options;
 
   const message = `
     <div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -43,7 +43,7 @@ const sendTripInvite = async (options) => {
         <li><strong>Dates:</strong> ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}</li>
       </ul>
       <p>Click below to view or accept your trip invitation:</p>
-      <a href="https://community-trips-frontend.vercel.app//trips/${tripId}" 
+      <a href="https://community-trips-frontend.vercel.app/invite/${inviteId}" 
          style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #28a745; color: #fff; text-decoration: none; border-radius: 5px;">
         View Trip Details
       </a>
