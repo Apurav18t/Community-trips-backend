@@ -106,14 +106,22 @@ module.exports = {
             }
             const trip = await db.trips.findById(id).populate("locations");
             // .populate("addedBy", "fullName")
-            // .populate("memberIds", "fullName");
+            // .populate("memberIds", "fullName");    
+            //   .populate("addedBy", "fullName email"); // ✅ populate the user's name
+
+
 
             if (!trip || trip.isDeleted) return res.status(404).json({ success: false, message: "Trip not found" });
+// 🧠 Add userName fallback logic
+    const userName = trip.addedBy?.fullName || trip.addedBy?.email || "Traveler";
 
             res.status(200).json({
                 success: true,
                 message: "Trip detail fetched.",
-                data: trip
+                data: {
+                    ...trip.toObject(),
+        userName: userName, // 👈 now frontend can read it
+                },
             });
         } catch (err) {
             console.log("ERRROR WHLE GETTING SINGLE TRIP:", err)
@@ -465,6 +473,14 @@ module.exports = {
 
             const trip = await db.trips.findById(tripId).populate("locations");
 
+    // ✅ RETURN if tips already exist
+    if (trip.tripsTips && trip.tripsTips.length > 20) {
+      return res.status(200).json({
+        success: true,
+        tips: trip.tripsTips,
+        message: "Using saved travel tips.",
+      });
+    }
             if (!trip || !trip.locations || trip.locations.length === 0) {
                 return res.status(404).json({
                     success: false,
