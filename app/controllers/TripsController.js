@@ -488,6 +488,14 @@ module.exports = {
                 });
             }
 
+              if(trip.tripsTips){
+                return res.status(200).json({
+                    success: true,
+                    message: "Getting saved travel tips.",
+        tips: trip.tripsTips  // ✅ fix this line
+                })
+            }
+
             // Extract location names
             const locationNames = trip.locations.map(loc => loc.locationName).filter(Boolean);
 
