@@ -68,6 +68,7 @@ module.exports = {
         try {
             const { email, fullName, role = 'user' } = req.body;
             let data = req.body;
+            data.isVerified = "Y";
 
             if (!email || !fullName || !role) {
                 return res.status(400).json({
