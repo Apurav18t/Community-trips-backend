@@ -117,7 +117,8 @@ module.exports = {
                 name: findNewUser.fullName,
                 email: findNewUser.email,
                 role: findNewUser.role,
-                access_token: token
+                access_token: token,
+                isVerified: findNewUser.isVerified
             };
 
             return res.status(200).json({
@@ -423,7 +424,8 @@ module.exports = {
                 name: findUser.fullName,
                 email: findUser.email,
                 role: findUser.role,
-                access_token: token
+                access_token: token,
+                isVerified: findUser.isVerified
             };
 
             return res.status(200).json({
