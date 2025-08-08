@@ -11,5 +11,6 @@ db.users = require("./users.model")(mongoose);
 db.trips = require("./trips.model")(mongoose);
 db.locations = require("./locations.model")(mongoose);
 db.tripInvites = require("./tripInvites.model.js")(mongoose);
+db.itinerary = require("./itinerary.model.js")(mongoose);
 
 module.exports = db;
