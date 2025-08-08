@@ -178,11 +178,11 @@ Respond in Markdown format with well-structured, day-wise itinerary. Include bol
 
     saveNewItinerary: async (req, res) => {
         try {
-            const { tripId, itineraryData } = req.body;
-            if (!tripId || !itineraryData) {
+            const { tripId, userId, itineraryData, promptUsed } = req.body;
+            if (!tripId || !itineraryData || !userId || !promptUsed) {
                 return res.status(400).json({
                     success: false,
-                    message: "Trip ID and itineraryData are required.",
+                    message: "Trip ID, userId and itineraryData are required.",
                 });
             }
 
@@ -194,16 +194,59 @@ Respond in Markdown format with well-structured, day-wise itinerary. Include bol
                 });
             }
 
-            await db.trips.updateOne({ _id: tripId, isDeleted: false }, { itineraryData });
+            const data = await db.itinerary.create({
+                tripId,
+                userId,
+                itineraryData,
+                promptUsed
+            });
 
-            return res.status(200).json({
+            return res.status(201).json({
                 success: true,
-                message: "Your itinerary has been saved."
+                message: "Your itinerary has been saved.",
+                data
             })
 
         } catch (err) {
             console.error("Error saving itinerary:", err);
-            return res.status(500).json({
+            return res.status(400).json({
+                success: false,
+                message: "Something went wrong while saving the itinerary.",
+            });
+        }
+    },
+
+    listAllItinerary: async (req, res) => {
+        try {
+            let { userId, tripId, page = 1, count = 10 } = req.query;
+            if (!userId || !tripId) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payload Missing",
+                })
+            }
+            let query = {
+                userId,
+                tripId
+            };
+            page = parseInt(page);
+            count = parseInt(count);
+
+            const findItinerary = await db.itinerary.find(query)
+                .populate('tripId')
+                .populate('userId', 'fullName')
+                .sort({ createdAt: 1 })
+                .skip((page - 1) * count)
+                .limit(count);
+
+            return res.status(200).json({
+                success: true,
+                data: findItinerary,
+            });
+
+        } catch (err) {
+            console.error("Error saving itinerary:", err);
+            return res.status(400).json({
                 success: false,
                 message: "Something went wrong while saving the itinerary.",
             });
