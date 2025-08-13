@@ -6,7 +6,7 @@ router.post("/generate", Itinerary.generateNewItinerary);
 
 router.post("/re-generate", Itinerary.reGenerateNewItinerary);
 
-router.put("/save", Itinerary.saveNewItinerary)
+router.post("/save", Itinerary.saveNewItinerary)
 
 router.get("/list", Itinerary.listAllItinerary)
 

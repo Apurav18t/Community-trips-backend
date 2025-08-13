@@ -103,48 +103,40 @@ Only return the final styled itinerary in **text/markdown**, not JSON.
 
     reGenerateNewItinerary: async (req, res) => {
         try {
-            const { tripId, prompt } = req.body;
+            const { itineraryHtml, prompt } = req.body;
 
-            if (!tripId || !prompt) {
+            if (!itineraryHtml || !prompt) {
                 return res.status(400).json({
                     success: false,
-                    message: "Trip ID and prompt are required.",
+                    message: "Itinerary HTML and prompt are required.",
                 });
             }
 
-            const trip = await db.trips.findOne({ _id: tripId, isDeleted: false });
-            const locations = await db.locations.find({
-                tripId: tripId,
-                isDeleted: false,
-            });
-
-            if (!trip || !locations.length) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Trip or locations not found.",
-                });
-            }
-
-            const locationNames = locations.map((l) => l.locationName).join(", ");
+            // Prepare the AI prompt to strictly follow the same HTML structure
             const formattedPrompt = `
-You are ASG, a smart travel assistant. Modify the existing trip itinerary based on the following feedback:
+You are Tripytrek, an expert travel assistant. The user has provided an existing trip itinerary in HTML format. 
 
-Trip Title: ${trip.tripName}
-Description: ${trip.tripDescription}
-Locations: ${locationNames}
-Dates: ${trip.startDate.toDateString()} to ${trip.endDate.toDateString()}
-Feedback from user: "${prompt}"
+Your job:
+1. Read the given HTML itinerary.
+2. Modify or regenerate it according to the user's instructions.
+3. Keep the output in **the same HTML structure and formatting** as the original.
+4. Do not return Markdown or plain text — only HTML that can be rendered directly.
 
-Respond in Markdown format with well-structured, day-wise itinerary. Include bold day titles and bullet points for activities, meals, and hotels. Make it pleasant and easy to read.
-`;
+Existing Itinerary:
+${itineraryHtml}
+
+User Prompt / Changes to Apply:
+"${prompt}"
+
+Now respond with only the updated itinerary in the same HTML format.
+        `;
 
             const completion = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
-                        content:
-                            "You are Tripytrek, an expert travel assistant. Provide visually clear day-by-day travel itineraries in Markdown format.",
+                        content: "You are Tripytrek, an expert travel assistant specializing in HTML-formatted itineraries.",
                     },
                     {
                         role: "user",
@@ -154,18 +146,12 @@ Respond in Markdown format with well-structured, day-wise itinerary. Include bol
                 temperature: 0.8,
             });
 
-            const response = completion.choices[0].message.content;
-
-            // // Save the new modified itinerary
-            // await db.trips.updateOne(
-            //     { _id: tripId },
-            //     { $set: { placesSelectedData: response } }
-            // );
+            const responseHtml = completion.choices[0]?.message?.content || "";
 
             return res.status(200).json({
                 success: true,
                 message: "Itinerary regenerated successfully with user prompt.",
-                data: response,
+                data: responseHtml,
             });
         } catch (err) {
             console.error("Error modifying itinerary:", err);
