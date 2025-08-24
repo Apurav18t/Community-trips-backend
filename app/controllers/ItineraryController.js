@@ -30,11 +30,11 @@ module.exports = {
 
     generateNewItinerary: async (req, res) => {
         try {
-            const { tripId } = req.body;
-            if (!tripId) {
+            const { tripId, tripType } = req.body;
+            if (!tripId|| !tripType) {
                 return res.status(400).json({
                     success: false,
-                    message: "Trip ID is required.",
+                    message: "Trip ID and Trip Type are required.",
                 });
             }
 
@@ -51,7 +51,14 @@ module.exports = {
             const locationNames = findLocations.map((loc) => loc.locationName).join(", ");
             const prompt = `
 ASG here! I’m assisting with a trip itinerary for the following locations: ${locationNames} from ${tripData.startDate.toDateString()} to ${tripData.endDate.toDateString()}.
+Please tailor the itinerary specifically for a **${tripType}**. Here’s what that might include:
 
+- **Solo Trip**: Personal exploration, meditation or yoga retreats, solo treks or hikes, cultural experiences, safety tips.
+- **Honeymoon Trip**: Romantic dinners, cozy stays, sunset viewpoints, spas, couple experiences like private cruises or hot air balloons.
+- **Romantic Trip**: Wine tasting, stargazing, candlelight dinners, nature walks, scenic drives.
+- **Family Trip**: Kid-friendly attractions, museums, water parks, educational spots, easy-paced activities.
+- **Trip with Friends / Group Trip**: Group-friendly adventures, nightlife, beach parties, local food markets, shared stays.
+- **Adventure Trip**: High-energy activities like trekking, water sports, zip-lining, desert safaris, and exploration.
 Build a **day-by-day itinerary** in a readable, stylish format, where:
 
 - Each day starts with a **bold heading** like "Day 1: Title".
@@ -103,40 +110,40 @@ Only return the final styled itinerary in **text/markdown**, not JSON.
 
     reGenerateNewItinerary: async (req, res) => {
         try {
-            const { itineraryHtml, prompt } = req.body;
+            const { itineraryMarkdown, prompt } = req.body;
 
-            if (!itineraryHtml || !prompt) {
+            if (!itineraryMarkdown || !prompt) {
                 return res.status(400).json({
                     success: false,
                     message: "Itinerary HTML and prompt are required.",
                 });
             }
 
-            // Prepare the AI prompt to strictly follow the same HTML structure
-            const formattedPrompt = `
-You are Tripytrek, an expert travel assistant. The user has provided an existing trip itinerary in HTML format. 
+          const formattedPrompt = `
+You are Tripytrek, an expert travel assistant. The user has provided an existing trip itinerary in **Markdown** format.
 
 Your job:
-1. Read the given HTML itinerary.
+1. Read the given Markdown itinerary.
 2. Modify or regenerate it according to the user's instructions.
-3. Keep the output in **the same HTML structure and formatting** as the original.
-4. Do not return Markdown or plain text — only HTML that can be rendered directly.
+3. Maintain the same **Markdown structure and formatting** (bold headings, lists, etc.)
+4. Do not return HTML. Only return updated **Markdown**.
 
 Existing Itinerary:
-${itineraryHtml}
+${itineraryMarkdown}
 
 User Prompt / Changes to Apply:
 "${prompt}"
 
-Now respond with only the updated itinerary in the same HTML format.
-        `;
+Now respond with only the updated itinerary in Markdown.
+`;
+
 
             const completion = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
-                        content: "You are Tripytrek, an expert travel assistant specializing in HTML-formatted itineraries.",
+                        content: "You are Tripytrek, an expert travel assistant specializing in Markdown-formatted itineraries",
                     },
                     {
                         role: "user",
@@ -146,12 +153,12 @@ Now respond with only the updated itinerary in the same HTML format.
                 temperature: 0.8,
             });
 
-            const responseHtml = completion.choices[0]?.message?.content || "";
+            const responseMarkdown = completion.choices[0]?.message?.content || "";
 
             return res.status(200).json({
                 success: true,
                 message: "Itinerary regenerated successfully with user prompt.",
-                data: responseHtml,
+                data: responseMarkdown,
             });
         } catch (err) {
             console.error("Error modifying itinerary:", err);

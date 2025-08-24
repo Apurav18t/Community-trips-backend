@@ -13,7 +13,7 @@ module.exports = {
             const data = req.body;
 
             if (
-                !data.tripName ||
+               // !data.tripName ||
                 !data.tripDescription ||
                 !data.startDate ||
                 !data.endDate ||
@@ -25,7 +25,14 @@ module.exports = {
                     success: false,
                     message: "PAYLOAD MISSING!"
                 })
-            }
+            }if (data.customTripName) {
+  data.tripName = data.customTripName;
+} else if (!data.tripName) {
+  const from = data.startLocation || "Unknown Start";
+  const to = data.locations?.map(loc => loc.locationName).join(", ") || "Unknown Destination";
+  data.tripName = `${from} to ${to}`;
+}
+
             let location = data.locations;
             delete data.locations;
             data.addedBy = req.identity.id;
